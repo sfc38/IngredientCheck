@@ -2,59 +2,49 @@
 //  ProductService.swift
 //  IngredientCheck
 //
-//  Created by Fatih Catpinar on 3/29/26.
-//
 
 import Foundation
 
-enum ProductFetchResult {
-    case success(Product)
+enum ProductFetchError: Error, LocalizedError {
     case notFound
     case networkError
     case decodingError
+
+    var errorDescription: String? {
+        switch self {
+        case .notFound:      return "Product not found."
+        case .networkError:  return "No internet connection or request failed."
+        case .decodingError: return "Unable to read product data."
+        }
+    }
 }
 
-class ProductService {
-    func fetchProduct(barcode: String, completion: @escaping (ProductFetchResult) -> Void) {
+struct ProductService {
+    func fetchProduct(barcode: String) async throws -> Product {
         guard let url = URL(string: "https://world.openfoodfacts.net/api/v2/product/\(barcode)") else {
-            DispatchQueue.main.async {
-                completion(.networkError)
-            }
-            return
+            throw ProductFetchError.networkError
         }
 
-        URLSession.shared.dataTask(with: url) { data, response, error in
-            if let error = error {
-                print("Network error: \(error)")
-                DispatchQueue.main.async {
-                    completion(.networkError)
-                }
-                return
-            }
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 15
 
-            guard let data = data else {
-                DispatchQueue.main.async {
-                    completion(.networkError)
-                }
-                return
-            }
+        let data: Data
+        do {
+            (data, _) = try await URLSession.shared.data(for: request)
+        } catch {
+            throw ProductFetchError.networkError
+        }
 
-            do {
-                let decoded = try JSONDecoder().decode(ProductResponse.self, from: data)
+        let decoded: ProductResponse
+        do {
+            decoded = try JSONDecoder().decode(ProductResponse.self, from: data)
+        } catch {
+            throw ProductFetchError.decodingError
+        }
 
-                DispatchQueue.main.async {
-                    if decoded.status == 1, let product = decoded.product {
-                        completion(.success(product))
-                    } else {
-                        completion(.notFound)
-                    }
-                }
-            } catch {
-                print("JSON decode error: \(error)")
-                DispatchQueue.main.async {
-                    completion(.decodingError)
-                }
-            }
-        }.resume()
+        guard decoded.status == 1, let product = decoded.product else {
+            throw ProductFetchError.notFound
+        }
+        return product
     }
 }

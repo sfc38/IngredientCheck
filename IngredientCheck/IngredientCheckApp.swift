@@ -2,16 +2,20 @@
 //  IngredientCheckApp.swift
 //  IngredientCheck
 //
-//  Created by Fatih Catpinar on 3/28/26.
-//
 
 import SwiftUI
 
 @main
 struct IngredientCheckApp: App {
+    @StateObject private var database = IngredientDatabase()
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(database)
+                .task {
+                    await database.load()
+                }
         }
     }
 }
