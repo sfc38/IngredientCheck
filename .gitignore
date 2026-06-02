@@ -30,4 +30,4 @@ fastlane/screenshots/**/*.png
 fastlane/test_output
 
 # Local planning / working notes (do not publish)
-PROJECT_OVERVIEW.md
+PROJECT_OVERVIEW.*
