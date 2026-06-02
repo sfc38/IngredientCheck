@@ -19,6 +19,10 @@ struct IngredientClassifier {
                 ingredient: ingredient,
                 status: status,
                 label: profile.label(for: status),
+                definition: dbEntry.definition,
+                commonSources: dbEntry.commonSources?.map {
+                    VerdictCommonSource(name: $0.name, note: $0.note)
+                },
                 explanation: ruling.explanation,
                 sources: ruling.opinions,
                 disputed: ruling.disputed ?? false,

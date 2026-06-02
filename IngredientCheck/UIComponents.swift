@@ -162,8 +162,30 @@ struct IngredientDetailSheet: View {
                         confidenceBadge
                     }
 
-                    Text(verdict.explanation)
-                        .font(.body)
+                    if let definition = verdict.definition, !definition.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("What it is").font(.headline)
+                            Text(definition).font(.body)
+                        }
+                    }
+
+                    if let sources = verdict.commonSources, !sources.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Common sources").font(.headline)
+                            VStack(alignment: .leading, spacing: 6) {
+                                ForEach(sources) { src in
+                                    commonSourceRow(src)
+                                }
+                            }
+                        }
+                    }
+
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Verdict").font(.headline)
+                        Text(verdict.explanation).font(.body)
+                    }
 
                     if !verdict.sources.isEmpty {
                         Divider()
@@ -241,5 +263,34 @@ struct IngredientDetailSheet: View {
         .padding(10)
         .background(Color(.systemGray6))
         .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    @ViewBuilder
+    private func commonSourceRow(_ source: VerdictCommonSource) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Circle()
+                .fill(noteColor(source.note))
+                .frame(width: 6, height: 6)
+                .padding(.top, 7)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(source.name).font(.body)
+                if let note = source.note, !note.isEmpty {
+                    Text(note)
+                        .font(.caption)
+                        .foregroundColor(noteColor(note))
+                }
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func noteColor(_ note: String?) -> Color {
+        guard let raw = note?.lowercased() else { return .secondary }
+        let isHaramish = raw.contains("haram") || raw.contains("forbidden")
+        let isHalalish = raw.contains("halal") || raw.contains("allowed")
+        let isConditional = raw.contains(" if ") || raw.contains("only") || raw.contains("depending") || raw.contains("mushbooh") || raw.contains("disputed") || raw.contains("doubtful")
+        if isHaramish && !isHalalish && !isConditional { return .red }
+        if isHalalish && !isHaramish && !isConditional { return .green }
+        return .orange
     }
 }

@@ -16,14 +16,22 @@ struct DBIngredient: Codable {
     let names: [String]
     let eNumber: String?
     let category: String
+    let definition: String?
+    let commonSources: [DBCommonSource]?
     let rulings: [String: DBRuling]
     let lastReviewed: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, names, category, rulings
+        case id, names, category, rulings, definition
         case eNumber = "e_number"
+        case commonSources = "common_sources"
         case lastReviewed = "last_reviewed"
     }
+}
+
+struct DBCommonSource: Codable {
+    let name: String
+    let note: String?
 }
 
 struct DBRuling: Codable {

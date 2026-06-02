@@ -47,15 +47,45 @@ struct VerdictSource: Codable, Hashable, Identifiable {
     }
 }
 
+struct VerdictCommonSource: Hashable, Identifiable {
+    let name: String
+    let note: String?
+    var id: String { name + "::" + (note ?? "") }
+}
+
 struct Verdict: Identifiable, Hashable {
     let id = UUID()
     let ingredient: OFFIngredient
     let status: VerdictStatus
     let label: String
+    let definition: String?
+    let commonSources: [VerdictCommonSource]?
     let explanation: String
     let sources: [VerdictSource]
     let disputed: Bool
     let confidence: String
+
+    init(
+        ingredient: OFFIngredient,
+        status: VerdictStatus,
+        label: String,
+        definition: String? = nil,
+        commonSources: [VerdictCommonSource]? = nil,
+        explanation: String,
+        sources: [VerdictSource],
+        disputed: Bool,
+        confidence: String
+    ) {
+        self.ingredient = ingredient
+        self.status = status
+        self.label = label
+        self.definition = definition
+        self.commonSources = commonSources
+        self.explanation = explanation
+        self.sources = sources
+        self.disputed = disputed
+        self.confidence = confidence
+    }
 
     static func == (lhs: Verdict, rhs: Verdict) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
