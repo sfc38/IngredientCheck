@@ -17,6 +17,14 @@
 		3DA18E282F7858B30077DB52 /* IngredientCheckUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DA18E272F7858B30077DB52 /* IngredientCheckUITests.swift */; };
 		3DA18E2A2F7858B30077DB52 /* IngredientCheckUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DA18E292F7858B30077DB52 /* IngredientCheckUITestsLaunchTests.swift */; };
 		3DA18E372F7860090077DB52 /* ScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DA18E362F7860090077DB52 /* ScannerView.swift */; };
+		3DAF4B272FCF1F7D000BD1E9 /* ingredients.json in Resources */ = {isa = PBXBuildFile; fileRef = 3DAF4B222FCF1F7D000BD1E9 /* ingredients.json */; };
+		3DAF4B282FCF1F7D000BD1E9 /* IngredientClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DAF4B202FCF1F7D000BD1E9 /* IngredientClassifier.swift */; };
+		3DAF4B292FCF1F7D000BD1E9 /* UIComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DAF4B252FCF1F7D000BD1E9 /* UIComponents.swift */; };
+		3DAF4B2A2FCF1F7D000BD1E9 /* OFFIngredient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DAF4B232FCF1F7D000BD1E9 /* OFFIngredient.swift */; };
+		3DAF4B2B2FCF1F7D000BD1E9 /* Verdict.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DAF4B262FCF1F7D000BD1E9 /* Verdict.swift */; };
+		3DAF4B2C2FCF1F7D000BD1E9 /* DietaryProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DAF4B1F2FCF1F7D000BD1E9 /* DietaryProfile.swift */; };
+		3DAF4B2D2FCF1F7D000BD1E9 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DAF4B242FCF1F7D000BD1E9 /* SettingsView.swift */; };
+		3DAF4B2E2FCF1F7D000BD1E9 /* IngredientDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DAF4B212FCF1F7D000BD1E9 /* IngredientDatabase.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -50,6 +58,14 @@
 		3DA18E272F7858B30077DB52 /* IngredientCheckUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngredientCheckUITests.swift; sourceTree = "<group>"; };
 		3DA18E292F7858B30077DB52 /* IngredientCheckUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngredientCheckUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		3DA18E362F7860090077DB52 /* ScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerView.swift; sourceTree = "<group>"; };
+		3DAF4B1F2FCF1F7D000BD1E9 /* DietaryProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DietaryProfile.swift; sourceTree = "<group>"; };
+		3DAF4B202FCF1F7D000BD1E9 /* IngredientClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngredientClassifier.swift; sourceTree = "<group>"; };
+		3DAF4B212FCF1F7D000BD1E9 /* IngredientDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngredientDatabase.swift; sourceTree = "<group>"; };
+		3DAF4B222FCF1F7D000BD1E9 /* ingredients.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = ingredients.json; sourceTree = "<group>"; };
+		3DAF4B232FCF1F7D000BD1E9 /* OFFIngredient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OFFIngredient.swift; sourceTree = "<group>"; };
+		3DAF4B242FCF1F7D000BD1E9 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		3DAF4B252FCF1F7D000BD1E9 /* UIComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIComponents.swift; sourceTree = "<group>"; };
+		3DAF4B262FCF1F7D000BD1E9 /* Verdict.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Verdict.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -100,6 +116,14 @@
 		3DA18E0B2F7858B10077DB52 /* IngredientCheck */ = {
 			isa = PBXGroup;
 			children = (
+				3DAF4B1F2FCF1F7D000BD1E9 /* DietaryProfile.swift */,
+				3DAF4B202FCF1F7D000BD1E9 /* IngredientClassifier.swift */,
+				3DAF4B212FCF1F7D000BD1E9 /* IngredientDatabase.swift */,
+				3DAF4B222FCF1F7D000BD1E9 /* ingredients.json */,
+				3DAF4B232FCF1F7D000BD1E9 /* OFFIngredient.swift */,
+				3DAF4B242FCF1F7D000BD1E9 /* SettingsView.swift */,
+				3DAF4B252FCF1F7D000BD1E9 /* UIComponents.swift */,
+				3DAF4B262FCF1F7D000BD1E9 /* Verdict.swift */,
 				3DA18E0C2F7858B10077DB52 /* IngredientCheckApp.swift */,
 				3DA18E0E2F7858B10077DB52 /* ContentView.swift */,
 				3DA18E362F7860090077DB52 /* ScannerView.swift */,
@@ -241,6 +265,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				3DA18E142F7858B30077DB52 /* Preview Assets.xcassets in Resources */,
+				3DAF4B272FCF1F7D000BD1E9 /* ingredients.json in Resources */,
 				3DA18E112F7858B30077DB52 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -267,6 +292,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				3DA18E372F7860090077DB52 /* ScannerView.swift in Sources */,
+				3DAF4B282FCF1F7D000BD1E9 /* IngredientClassifier.swift in Sources */,
+				3DAF4B292FCF1F7D000BD1E9 /* UIComponents.swift in Sources */,
+				3DAF4B2A2FCF1F7D000BD1E9 /* OFFIngredient.swift in Sources */,
+				3DAF4B2B2FCF1F7D000BD1E9 /* Verdict.swift in Sources */,
+				3DAF4B2C2FCF1F7D000BD1E9 /* DietaryProfile.swift in Sources */,
+				3DAF4B2D2FCF1F7D000BD1E9 /* SettingsView.swift in Sources */,
+				3DAF4B2E2FCF1F7D000BD1E9 /* IngredientDatabase.swift in Sources */,
 				3D0D6B092F7981410021EBD6 /* Product.swift in Sources */,
 				3DA18E0F2F7858B10077DB52 /* ContentView.swift in Sources */,
 				3DA18E0D2F7858B10077DB52 /* IngredientCheckApp.swift in Sources */,

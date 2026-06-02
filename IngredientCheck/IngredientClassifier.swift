@@ -5,6 +5,7 @@
 
 import Foundation
 
+@MainActor
 struct IngredientClassifier {
     let database: IngredientDatabase
     let profile: DietaryProfile
