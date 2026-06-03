@@ -230,22 +230,9 @@ struct HomeView: View {
 
     private func historyRow(_ item: ScanHistoryItem) -> some View {
         HStack(spacing: 12) {
-            if let imageUrl = item.bestThumbnailUrl, let url = URL(string: imageUrl), !imageUrl.isEmpty {
-                AsyncImage(url: url) { image in
-                    image.resizable().scaledToFill()
-                } placeholder: {
-                    Color(.systemGray6)
-                }
+            ScanHistoryThumbnail(item: item)
                 .frame(width: 56, height: 56)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
-            } else {
-                ZStack {
-                    Color(.systemGray6)
-                    Image(systemName: "barcode").foregroundColor(.secondary)
-                }
-                .frame(width: 56, height: 56)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-            }
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.displayName)
                     .font(.subheadline)
@@ -347,6 +334,35 @@ struct HistoryView: View {
             AsyncImage(url: url) { image in
                 image.resizable().scaledToFill()
             } placeholder: { Color(.systemGray6) }
+        } else {
+            ZStack {
+                Color(.systemGray6)
+                Image(systemName: "barcode").foregroundColor(.secondary)
+            }
+        }
+    }
+}
+
+/// Thumbnail for a ScanHistoryItem. Prefers the locally-cached image
+/// that ScanHistory wrote to disk on record() so the home page never
+/// has to re-fetch from OFF servers. Falls back to AsyncImage from URL,
+/// then to a barcode placeholder.
+struct ScanHistoryThumbnail: View {
+    let item: ScanHistoryItem
+
+    var body: some View {
+        if item.hasCachedImage,
+           let path = item.localImagePath,
+           let ui = UIImage(contentsOfFile: path.path) {
+            Image(uiImage: ui).resizable().scaledToFill()
+        } else if let urlString = item.bestThumbnailUrl,
+                  !urlString.isEmpty,
+                  let url = URL(string: urlString) {
+            AsyncImage(url: url) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                Color(.systemGray6)
+            }
         } else {
             ZStack {
                 Color(.systemGray6)

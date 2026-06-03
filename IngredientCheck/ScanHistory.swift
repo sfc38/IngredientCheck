@@ -44,6 +44,24 @@ struct ScanHistoryItem: Codable, Identifiable, Hashable {
         if let t = imageThumbUrl, !t.isEmpty { return t }
         return imageUrl
     }
+
+    /// Local cached image path for this scan, keyed by barcode.
+    /// We download the thumbnail once on record() and reuse the file
+    /// across re-renders so the home page row doesn't flicker.
+    var localImagePath: URL? {
+        guard let dir = try? FileManager.default
+                .url(for: .cachesDirectory, in: .userDomainMask,
+                     appropriateFor: nil, create: false)
+                .appendingPathComponent("history-images", isDirectory: true)
+        else { return nil }
+        let safe = barcode.replacingOccurrences(of: "/", with: "_")
+        return dir.appendingPathComponent("\(safe).img")
+    }
+
+    var hasCachedImage: Bool {
+        guard let p = localImagePath else { return false }
+        return FileManager.default.fileExists(atPath: p.path)
+    }
 }
 
 @MainActor
@@ -65,6 +83,22 @@ final class ScanHistory: ObservableObject {
             items = Array(items.prefix(maxItems))
         }
         save()
+
+        // Persist the image locally so re-renders don't have to re-fetch.
+        if let urlString = product?.bestThumbnailUrl, !urlString.isEmpty,
+           let url = URL(string: urlString),
+           let path = item.localImagePath,
+           !FileManager.default.fileExists(atPath: path.path) {
+            Task.detached(priority: .utility) {
+                try? FileManager.default.createDirectory(
+                    at: path.deletingLastPathComponent(),
+                    withIntermediateDirectories: true
+                )
+                if let (data, _) = try? await URLSession.shared.data(from: url) {
+                    try? data.write(to: path, options: .atomic)
+                }
+            }
+        }
     }
 
     func clear() {
