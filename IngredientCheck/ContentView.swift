@@ -330,16 +330,7 @@ struct HistoryView: View {
 
     @ViewBuilder
     private func productThumbnail(_ item: ScanHistoryItem) -> some View {
-        if let imageUrl = item.imageUrl, let url = URL(string: imageUrl), !imageUrl.isEmpty {
-            AsyncImage(url: url) { image in
-                image.resizable().scaledToFill()
-            } placeholder: { Color(.systemGray6) }
-        } else {
-            ZStack {
-                Color(.systemGray6)
-                Image(systemName: "barcode").foregroundColor(.secondary)
-            }
-        }
+        ScanHistoryThumbnail(item: item)
     }
 }
 
