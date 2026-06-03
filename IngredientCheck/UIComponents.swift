@@ -97,17 +97,37 @@ struct IngredientChip: View {
 struct SummaryHeader: View {
     let summary: VerdictSummary
     let profile: DietaryProfile
+    @Binding var filter: VerdictStatus?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Summary — \(profile.displayName) profile")
-                .font(.headline)
+            HStack {
+                Text("Summary — \(profile.displayName) profile")
+                    .font(.headline)
+                Spacer()
+                if filter != nil {
+                    Button {
+                        filter = nil
+                    } label: {
+                        Label("Clear", systemImage: "xmark.circle.fill")
+                            .labelStyle(.titleAndIcon)
+                            .font(.caption)
+                    }
+                    .foregroundColor(.secondary)
+                }
+            }
 
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 summaryPill(.forbidden, label: profile.label(for: .forbidden))
                 summaryPill(.caution,   label: profile.label(for: .caution))
                 summaryPill(.allowed,   label: profile.label(for: .allowed))
                 summaryPill(.unknown,   label: profile.label(for: .unknown))
+            }
+
+            if filter != nil {
+                Text("Tap a status again to clear the filter.")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
             }
         }
     }
@@ -115,21 +135,38 @@ struct SummaryHeader: View {
     @ViewBuilder
     private func summaryPill(_ status: VerdictStatus, label: String) -> some View {
         let count = summary.count(status)
-        VStack(spacing: 4) {
-            Text("\(count)")
-                .font(.title2)
-                .fontWeight(.semibold)
-                .foregroundColor(count > 0 ? status.color : .secondary)
-            Text(label)
-                .font(.caption2)
-                .foregroundColor(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
+        let isSelected = filter == status
+        let isInactive = count == 0
+        Button {
+            guard count > 0 else { return }
+            filter = (filter == status) ? nil : status
+        } label: {
+            VStack(spacing: 4) {
+                Text("\(count)")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(isSelected ? .white : (isInactive ? .secondary : status.color))
+                Text(label)
+                    .font(.caption2)
+                    .foregroundColor(isSelected ? .white.opacity(0.9) : .secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(
+                isSelected ? status.color :
+                  (isInactive ? Color(.systemGray6) : status.color.opacity(0.12))
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isSelected ? status.color : Color.clear, lineWidth: 2)
+            )
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-        .background(count > 0 ? status.color.opacity(0.1) : Color(.systemGray6))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .buttonStyle(.plain)
+        .disabled(isInactive)
+        .accessibilityHint(isSelected ? "Selected. Tap to clear filter." : (isInactive ? "" : "Tap to filter by \(label)."))
     }
 }
 
@@ -255,14 +292,34 @@ struct IngredientDetailSheet: View {
                     .foregroundColor(.secondary)
             }
             if let ref = source.ref, !ref.isEmpty {
-                Text(ref)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                refView(ref)
             }
         }
         .padding(10)
         .background(Color(.systemGray6))
         .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    @ViewBuilder
+    private func refView(_ ref: String) -> some View {
+        if (ref.hasPrefix("http://") || ref.hasPrefix("https://")),
+           let url = URL(string: ref) {
+            Link(destination: url) {
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.up.right.square")
+                        .font(.caption2)
+                    Text(ref)
+                        .font(.caption2)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+                .foregroundColor(.blue)
+            }
+        } else {
+            Text(ref)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
     }
 
     @ViewBuilder

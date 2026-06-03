@@ -92,9 +92,24 @@ final class IngredientDatabase: ObservableObject {
         return nil
     }
 
+    /// Lookup by name. Tries: exact match, plural-stripped, then
+    /// token-by-token for multi-word inputs (so "Black raisins" matches
+    /// en:raisin via the "raisins" token).
     func lookup(name: String) -> DBIngredient? {
         let key = name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-        return byName[key]
+        guard !key.isEmpty else { return nil }
+        if let hit = byName[key] { return hit }
+        if key.hasSuffix("s"), let hit = byName[String(key.dropLast())] { return hit }
+
+        let tokens = key.split(whereSeparator: { !$0.isLetter }).map(String.init)
+        if tokens.count > 1 {
+            for token in tokens.reversed() {  // last token usually the noun
+                if token.count < 3 { continue }
+                if let hit = byName[token] { return hit }
+                if token.hasSuffix("s"), let hit = byName[String(token.dropLast())] { return hit }
+            }
+        }
+        return nil
     }
 
     private func apply(_ db: DBFile) {
@@ -103,7 +118,14 @@ final class IngredientDatabase: ObservableObject {
         var nameIndex: [String: DBIngredient] = [:]
         for ing in db.ingredients {
             for name in ing.names {
-                nameIndex[name.lowercased()] = ing
+                let lower = name.lowercased()
+                if nameIndex[lower] == nil { nameIndex[lower] = ing }
+                // Auto-pluralize: if the name doesn't end in 's', also index
+                // its naive plural so "raisins" matches "raisin".
+                if !lower.hasSuffix("s") {
+                    let plural = lower + "s"
+                    if nameIndex[plural] == nil { nameIndex[plural] = ing }
+                }
             }
         }
         self.byName = nameIndex
