@@ -43,8 +43,15 @@ struct IngredientClassifier {
         )
     }
 
+    /// Classify only the TOP-LEVEL ingredients from the OFF parse.
+    /// Open Food Facts sometimes nests qualifiers and classifications under
+    /// the real ingredient (e.g. "SOY LECITHIN (EMULSIFIER)" becomes
+    /// soy-lecithin with a sub-ingredient "emulsifier"; "PARMESAN (MILK,
+    /// SALT)" becomes parmesan with subs milk + salt). Flattening to leaves
+    /// drops the user-visible label name, so we keep the top level and
+    /// rely on its own classification.
     func classify(_ ingredients: [OFFIngredient]) -> [Verdict] {
-        ingredients.flatMap { $0.leaves }.map { classify($0) }
+        ingredients.map { classify($0) }
     }
 
     private func offTaxonomyFallback(_ ingredient: OFFIngredient) -> Verdict? {

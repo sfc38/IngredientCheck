@@ -14,6 +14,7 @@ struct Product: Codable {
     let productName: String?
     let ingredientsText: String?
     let imageUrl: String?
+    let imageThumbUrl: String?
     let brands: String?
     let ingredients: [OFFIngredient]?
     let labelsTags: [String]?
@@ -22,9 +23,17 @@ struct Product: Codable {
         case productName = "product_name"
         case ingredientsText = "ingredients_text"
         case imageUrl = "image_small_url"
+        case imageThumbUrl = "image_thumb_url"
         case brands
         case ingredients
         case labelsTags = "labels_tags"
+    }
+
+    /// Best image URL for a small thumbnail (recent scans, history list).
+    /// Thumb is smaller and loads more reliably; falls back to small if absent.
+    var bestThumbnailUrl: String? {
+        if let t = imageThumbUrl, !t.isEmpty { return t }
+        return imageUrl
     }
 }
 

@@ -179,6 +179,12 @@ struct IngredientDetailSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+                    // Prominent ingredient name — what the label actually says
+                    Text(verdict.ingredient.displayName)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .fixedSize(horizontal: false, vertical: true)
+
                     HStack(spacing: 10) {
                         Circle()
                             .fill(verdict.status.color)

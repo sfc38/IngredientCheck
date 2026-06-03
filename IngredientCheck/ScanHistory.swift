@@ -11,6 +11,7 @@ struct ScanHistoryItem: Codable, Identifiable, Hashable {
     let productName: String?
     let brands: String?
     let imageUrl: String?
+    let imageThumbUrl: String?
     let date: Date
     let allowed: Int
     let caution: Int
@@ -23,6 +24,7 @@ struct ScanHistoryItem: Codable, Identifiable, Hashable {
         self.productName = product?.productName
         self.brands = product?.brands
         self.imageUrl = product?.imageUrl
+        self.imageThumbUrl = product?.imageThumbUrl
         self.date = Date()
         self.allowed   = verdicts.filter { $0.status == .allowed }.count
         self.caution   = verdicts.filter { $0.status == .caution }.count
@@ -36,6 +38,12 @@ struct ScanHistoryItem: Codable, Identifiable, Hashable {
     }
 
     var totalChips: Int { allowed + caution + forbidden + unknown }
+
+    /// Best small-image URL for thumbnails. Tries thumb first, falls back to small.
+    var bestThumbnailUrl: String? {
+        if let t = imageThumbUrl, !t.isEmpty { return t }
+        return imageUrl
+    }
 }
 
 @MainActor

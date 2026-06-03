@@ -110,33 +110,41 @@ struct HomeView: View {
     }
 
     private var databaseStatusRow: some View {
-        NavigationLink(destination: SettingsView()) {
-            HStack(spacing: 12) {
-                Image(systemName: database.file != nil ? "checkmark.circle.fill" : "ellipsis.circle.fill")
-                    .font(.title3)
-                    .foregroundColor(database.file != nil ? .green : .secondary)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(database.file != nil ? "Database ready" : "Loading database…")
+        NavigationLink(destination: DataSourcesView()) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 10) {
+                    Image(systemName: database.file != nil ? "checkmark.circle.fill" : "ellipsis.circle.fill")
+                        .font(.title3)
+                        .foregroundColor(database.file != nil ? .green : .secondary)
+                    Text(database.file != nil ? "Where our data comes from" : "Loading database…")
                         .font(.subheadline)
-                        .fontWeight(.medium)
+                        .fontWeight(.semibold)
                         .foregroundColor(.primary)
-                    if let file = database.file {
-                        Text("\(file.ingredients.count) ingredients · v\(file.version)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    } else {
-                        Text("Fetching latest from GitHub…")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
 
-                Spacer()
+                if let file = database.file {
+                    VStack(alignment: .leading, spacing: 4) {
+                        statLine(icon: "circle.grid.2x2",
+                                 text: "\(file.ingredients.count.formatted()) ingredients classified")
+                        statLine(icon: "doc.text",
+                                 text: "Wikipedia descriptions, Open Food Facts data, WorldOfIslam community list")
+                        statLine(icon: "arrow.triangle.2.circlepath",
+                                 text: "Database version \(file.version) — fetched fresh on launch")
+                    }
+                    .padding(.leading, 4)
 
-                Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    Text("Tap to see every source with links →")
+                        .font(.caption2)
+                        .foregroundColor(.blue)
+                } else {
+                    Text("Fetching from raw.githubusercontent.com…")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -145,6 +153,19 @@ struct HomeView: View {
             .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
         }
         .buttonStyle(.plain)
+    }
+
+    private func statLine(icon: String, text: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: icon)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .frame(width: 14)
+            Text(text)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     private var howItWorksCard: some View {
@@ -209,7 +230,7 @@ struct HomeView: View {
 
     private func historyRow(_ item: ScanHistoryItem) -> some View {
         HStack(spacing: 12) {
-            if let imageUrl = item.imageUrl, let url = URL(string: imageUrl), !imageUrl.isEmpty {
+            if let imageUrl = item.bestThumbnailUrl, let url = URL(string: imageUrl), !imageUrl.isEmpty {
                 AsyncImage(url: url) { image in
                     image.resizable().scaledToFill()
                 } placeholder: {
@@ -245,33 +266,7 @@ struct HomeView: View {
         }
     }
 
-    /// Bucketed relative time — no live seconds counter. "Just now",
-    /// "12 min ago", "3h ago", "Yesterday", "Mon", or a full date.
-    private func friendlyRelative(_ date: Date) -> String {
-        let now = Date()
-        let interval = now.timeIntervalSince(date)
-        if interval < 60 { return "Just now" }
-        if interval < 3600 {
-            let m = Int(interval / 60)
-            return "\(m) min ago"
-        }
-        if Calendar.current.isDateInToday(date) {
-            let h = Int(interval / 3600)
-            return "\(h)h ago"
-        }
-        if Calendar.current.isDateInYesterday(date) {
-            return "Yesterday"
-        }
-        let daysAgo = Calendar.current.dateComponents([.day], from: date, to: now).day ?? 0
-        if daysAgo < 7 {
-            let f = DateFormatter()
-            f.dateFormat = "EEEE"  // "Monday"
-            return f.string(from: date)
-        }
-        let f = DateFormatter()
-        f.setLocalizedDateFormatFromTemplate("MMMd")  // "Jun 3"
-        return f.string(from: date)
-    }
+    private func friendlyRelative(_ date: Date) -> String { date.friendlyRelative }
 
     @ViewBuilder
     private func historyMiniCounts(_ item: ScanHistoryItem) -> some View {
@@ -304,17 +299,13 @@ struct HistoryView: View {
             ForEach(history.items) { item in
                 NavigationLink(destination: ScanView(initialBarcode: item.barcode)) {
                     HStack(spacing: 12) {
-                        if let imageUrl = item.imageUrl, let url = URL(string: imageUrl), !imageUrl.isEmpty {
-                            AsyncImage(url: url) { image in
-                                image.resizable().scaledToFill()
-                            } placeholder: { Color(.systemGray6) }
-                            .frame(width: 44, height: 44)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                        }
+                        productThumbnail(item)
+                            .frame(width: 56, height: 56)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.displayName).font(.subheadline).fontWeight(.medium)
                             HStack(spacing: 6) {
-                                Text(item.date, style: .relative)
+                                Text(item.date.friendlyRelative)
                                     .font(.caption2)
                                     .foregroundColor(.secondary)
                                 if item.forbidden > 0 {
@@ -348,6 +339,50 @@ struct HistoryView: View {
                 Text("No scans yet.").foregroundColor(.secondary)
             }
         }
+    }
+
+    @ViewBuilder
+    private func productThumbnail(_ item: ScanHistoryItem) -> some View {
+        if let imageUrl = item.imageUrl, let url = URL(string: imageUrl), !imageUrl.isEmpty {
+            AsyncImage(url: url) { image in
+                image.resizable().scaledToFill()
+            } placeholder: { Color(.systemGray6) }
+        } else {
+            ZStack {
+                Color(.systemGray6)
+                Image(systemName: "barcode").foregroundColor(.secondary)
+            }
+        }
+    }
+}
+
+extension Date {
+    /// Bucketed relative time — no live seconds counter. "Just now",
+    /// "12 min ago", "3h ago", "Yesterday", "Mon", or a full date.
+    var friendlyRelative: String {
+        let now = Date()
+        let interval = now.timeIntervalSince(self)
+        if interval < 60 { return "Just now" }
+        if interval < 3600 {
+            let m = Int(interval / 60)
+            return "\(m) min ago"
+        }
+        if Calendar.current.isDateInToday(self) {
+            let h = Int(interval / 3600)
+            return "\(h)h ago"
+        }
+        if Calendar.current.isDateInYesterday(self) {
+            return "Yesterday"
+        }
+        let daysAgo = Calendar.current.dateComponents([.day], from: self, to: now).day ?? 0
+        if daysAgo < 7 {
+            let f = DateFormatter()
+            f.dateFormat = "EEEE"
+            return f.string(from: self)
+        }
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("MMMd")
+        return f.string(from: self)
     }
 }
 
