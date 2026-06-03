@@ -10,7 +10,76 @@ struct IngredientClassifier {
     let database: IngredientDatabase
     let profile: DietaryProfile
 
+    /// Classify one OFFIngredient, taking its sub-ingredients into account:
+    ///   - classify the parent (top-level) directly
+    ///   - recursively classify each sub-ingredient
+    ///   - combine: if a sub is more severe than the parent (or the parent
+    ///     is unknown), escalate to the sub's status. This way:
+    ///       * "Vegetable Fat (Palm, Shea, Illipe)" — parent might be
+    ///         unknown but subs are all allowed -> allowed.
+    ///       * "Parmesan (Milk, Salt, Enzymes)" — parent caution stays
+    ///         caution, with sub list shown in the explanation.
+    ///       * "Soya Lecithin (Emulsifier)" — both allowed -> allowed.
+    ///       * A hypothetical "Cake (Lard, Sugar)" — parent allowed but
+    ///         lard sub is forbidden -> escalate to forbidden.
     func classify(_ ingredient: OFFIngredient) -> Verdict {
+        let parentVerdict = classifyOne(ingredient)
+
+        guard let subs = ingredient.ingredients, !subs.isEmpty else {
+            return parentVerdict
+        }
+
+        let subVerdicts = subs.map { classify($0) }
+        let parentRank = severity(parentVerdict.status)
+        let worstSubRank = subVerdicts.map { severity($0.status) }.max() ?? 0
+        if worstSubRank <= parentRank {
+            return parentVerdict  // subs add no severity
+        }
+
+        // Synthesize a combined verdict.
+        let combinedStatus = subVerdicts
+            .max(by: { severity($0.status) < severity($1.status) })?
+            .status ?? parentVerdict.status
+        let contributingSubs = subVerdicts.filter { $0.status == combinedStatus }
+        let subNames = contributingSubs
+            .map { $0.ingredient.displayName }
+            .joined(separator: ", ")
+
+        let leadNote: String
+        if parentVerdict.status == .unknown {
+            leadNote = "We don't have direct data on the parent ingredient. " +
+                "Classification was determined from its sub-ingredient(s): \(subNames)."
+        } else {
+            leadNote = "Status was elevated by the sub-ingredient(s) listed " +
+                "on the label: \(subNames)."
+        }
+
+        let mergedExplanation: String = {
+            var parts: [String] = [leadNote]
+            if parentVerdict.status != .unknown, !parentVerdict.explanation.isEmpty {
+                parts.append("Parent (\(ingredient.text ?? ingredient.id ?? "?")): \(parentVerdict.explanation)")
+            }
+            if let sub = contributingSubs.first, !sub.explanation.isEmpty {
+                parts.append("Sub-ingredient (\(sub.ingredient.displayName)): \(sub.explanation)")
+            }
+            return parts.joined(separator: "\n\n")
+        }()
+
+        return Verdict(
+            ingredient: ingredient,
+            status: combinedStatus,
+            label: profile.label(for: combinedStatus),
+            definition: parentVerdict.definition ?? contributingSubs.first?.definition,
+            commonSources: parentVerdict.commonSources ?? contributingSubs.first?.commonSources,
+            explanation: mergedExplanation,
+            sources: parentVerdict.sources + (contributingSubs.first?.sources ?? []),
+            disputed: parentVerdict.disputed || contributingSubs.contains { $0.disputed },
+            confidence: contributingSubs.first?.confidence ?? parentVerdict.confidence
+        )
+    }
+
+    /// Classify just this one ingredient — no recursion into subs.
+    private func classifyOne(_ ingredient: OFFIngredient) -> Verdict {
         if let dbEntry = database.lookup(id: ingredient.id)
             ?? database.lookup(name: ingredient.text ?? ""),
            let ruling = dbEntry.rulings[profile.id] {
@@ -43,13 +112,19 @@ struct IngredientClassifier {
         )
     }
 
-    /// Classify only the TOP-LEVEL ingredients from the OFF parse.
-    /// Open Food Facts sometimes nests qualifiers and classifications under
-    /// the real ingredient (e.g. "SOY LECITHIN (EMULSIFIER)" becomes
-    /// soy-lecithin with a sub-ingredient "emulsifier"; "PARMESAN (MILK,
-    /// SALT)" becomes parmesan with subs milk + salt). Flattening to leaves
-    /// drops the user-visible label name, so we keep the top level and
-    /// rely on its own classification.
+    /// Severity ranking for combining parent + sub verdicts.
+    /// forbidden > caution > allowed > unknown
+    private func severity(_ status: VerdictStatus) -> Int {
+        switch status {
+        case .unknown:   return 0
+        case .allowed:   return 1
+        case .caution:   return 2
+        case .forbidden: return 3
+        }
+    }
+
+    /// Classify a list of top-level parsed ingredients. Each call
+    /// recurses into its own sub-ingredients via classify(_:).
     func classify(_ ingredients: [OFFIngredient]) -> [Verdict] {
         ingredients.map { classify($0) }
     }
