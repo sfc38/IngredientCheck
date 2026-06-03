@@ -30,10 +30,35 @@ struct IngredientClassifier {
         }
 
         let subVerdicts = subs.map { classify($0) }
+
+        // Build the sub-info list so the detail sheet's "What it is"
+        // section can show definitions for each parenthesized item.
+        let subInfo: [VerdictSubInfo] = subVerdicts.compactMap { sv in
+            // Skip if no definition AND status is unknown — nothing useful to show
+            guard sv.definition != nil || sv.status != .unknown else { return nil }
+            return VerdictSubInfo(
+                name: sv.ingredient.displayName,
+                definition: sv.definition,
+                status: sv.status
+            )
+        }
+
         let parentRank = severity(parentVerdict.status)
         let worstSubRank = subVerdicts.map { severity($0.status) }.max() ?? 0
         if worstSubRank <= parentRank {
-            return parentVerdict  // subs add no severity
+            // Parent's verdict wins; still attach subInfo for display
+            return Verdict(
+                ingredient: parentVerdict.ingredient,
+                status: parentVerdict.status,
+                label: parentVerdict.label,
+                definition: parentVerdict.definition,
+                commonSources: parentVerdict.commonSources,
+                subInfo: subInfo.isEmpty ? nil : subInfo,
+                explanation: parentVerdict.explanation,
+                sources: parentVerdict.sources,
+                disputed: parentVerdict.disputed,
+                confidence: parentVerdict.confidence
+            )
         }
 
         // Synthesize a combined verdict.
@@ -71,6 +96,7 @@ struct IngredientClassifier {
             label: profile.label(for: combinedStatus),
             definition: parentVerdict.definition ?? contributingSubs.first?.definition,
             commonSources: parentVerdict.commonSources ?? contributingSubs.first?.commonSources,
+            subInfo: subInfo.isEmpty ? nil : subInfo,
             explanation: mergedExplanation,
             sources: parentVerdict.sources + (contributingSubs.first?.sources ?? []),
             disputed: parentVerdict.disputed || contributingSubs.contains { $0.disputed },

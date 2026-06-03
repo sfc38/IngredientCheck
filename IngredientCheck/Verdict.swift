@@ -53,6 +53,16 @@ struct VerdictCommonSource: Hashable, Identifiable {
     var id: String { name + "::" + (note ?? "") }
 }
 
+/// "What it is" info for one sub-ingredient inside a compound parent.
+/// Example: "Soya Lecithin (E322)" -> subInfo entry { name: "E322",
+/// definition: "E322 is the E-number for lecithin..." }.
+struct VerdictSubInfo: Hashable, Identifiable {
+    let name: String
+    let definition: String?
+    let status: VerdictStatus
+    var id: String { name + "::" + (definition ?? "") }
+}
+
 struct Verdict: Identifiable, Hashable {
     let id = UUID()
     let ingredient: OFFIngredient
@@ -60,6 +70,7 @@ struct Verdict: Identifiable, Hashable {
     let label: String
     let definition: String?
     let commonSources: [VerdictCommonSource]?
+    let subInfo: [VerdictSubInfo]?
     let explanation: String
     let sources: [VerdictSource]
     let disputed: Bool
@@ -71,6 +82,7 @@ struct Verdict: Identifiable, Hashable {
         label: String,
         definition: String? = nil,
         commonSources: [VerdictCommonSource]? = nil,
+        subInfo: [VerdictSubInfo]? = nil,
         explanation: String,
         sources: [VerdictSource],
         disputed: Bool,
@@ -81,6 +93,7 @@ struct Verdict: Identifiable, Hashable {
         self.label = label
         self.definition = definition
         self.commonSources = commonSources
+        self.subInfo = subInfo
         self.explanation = explanation
         self.sources = sources
         self.disputed = disputed

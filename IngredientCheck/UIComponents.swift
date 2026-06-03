@@ -205,10 +205,18 @@ struct IngredientDetailSheet: View {
                         confidenceBadge
                     }
 
-                    if let definition = verdict.definition, !definition.isEmpty {
+                    if hasWhatItIsContent {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("What it is").font(.headline)
-                            Text(definition).font(.body)
+                            if let definition = verdict.definition, !definition.isEmpty {
+                                Text(definition).font(.body)
+                            }
+                            if let subs = verdict.subInfo {
+                                let withDefs = subs.filter { ($0.definition?.isEmpty == false) }
+                                ForEach(withDefs) { sub in
+                                    subInfoRow(sub)
+                                }
+                            }
                         }
                     }
 
@@ -256,6 +264,30 @@ struct IngredientDetailSheet: View {
                 }
             }
         }
+    }
+
+    private var hasWhatItIsContent: Bool {
+        if let d = verdict.definition, !d.isEmpty { return true }
+        if let subs = verdict.subInfo,
+           subs.contains(where: { ($0.definition?.isEmpty == false) }) {
+            return true
+        }
+        return false
+    }
+
+    @ViewBuilder
+    private func subInfoRow(_ sub: VerdictSubInfo) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Circle().fill(sub.status.color).frame(width: 6, height: 6)
+                Text(sub.name).font(.subheadline).fontWeight(.medium)
+            }
+            if let def = sub.definition, !def.isEmpty {
+                Text(def).font(.callout).foregroundColor(.secondary)
+            }
+        }
+        .padding(.leading, 4)
+        .padding(.top, 4)
     }
 
     @ViewBuilder
