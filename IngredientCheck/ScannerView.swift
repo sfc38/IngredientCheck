@@ -9,10 +9,51 @@ import SwiftUI
 import VisionKit
 import UIKit
 
+/// Container that owns a DataScannerViewController as a child and
+/// ties start/stop scanning to its own lifecycle. Without this, the
+/// scanner inside a TabView tab opens the camera preview but never
+/// starts barcode recognition — startScanning() called before the
+/// view is in a window quietly no-ops. DataScannerViewController is
+/// not subclassable outside VisionKit, so we use composition.
+final class ScannerContainerVC: UIViewController {
+    let scanner: DataScannerViewController
+
+    init(scanner: DataScannerViewController) {
+        self.scanner = scanner
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        addChild(scanner)
+        scanner.view.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(scanner.view)
+        NSLayoutConstraint.activate([
+            scanner.view.topAnchor.constraint(equalTo: view.topAnchor),
+            scanner.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            scanner.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scanner.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+        ])
+        scanner.didMove(toParent: self)
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        if !scanner.isScanning { try? scanner.startScanning() }
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        if scanner.isScanning { scanner.stopScanning() }
+    }
+}
+
 struct ScannerView: UIViewControllerRepresentable {
     @Binding var scannedCode: String
 
-    func makeUIViewController(context: Context) -> DataScannerViewController {
+    func makeUIViewController(context: Context) -> ScannerContainerVC {
         let scanner = DataScannerViewController(
             recognizedDataTypes: [.barcode()],
             qualityLevel: .balanced,
@@ -22,13 +63,14 @@ struct ScannerView: UIViewControllerRepresentable {
             isGuidanceEnabled: true,
             isHighlightingEnabled: true
         )
-
         scanner.delegate = context.coordinator
-        try? scanner.startScanning()
-        return scanner
+        return ScannerContainerVC(scanner: scanner)
     }
 
-    func updateUIViewController(_ uiViewController: DataScannerViewController, context: Context) {
+    func updateUIViewController(_ uiViewController: ScannerContainerVC, context: Context) {
+        if !uiViewController.scanner.isScanning {
+            try? uiViewController.scanner.startScanning()
+        }
     }
 
     func makeCoordinator() -> Coordinator {

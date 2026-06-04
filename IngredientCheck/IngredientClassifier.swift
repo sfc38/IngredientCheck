@@ -36,8 +36,7 @@ struct IngredientClassifier {
         // the parent by checking against the parent's names list, which
         // already contains its E-code and translations.
         let parentNames: Set<String> = {
-            let entry = database.lookup(id: ingredient.id)
-                ?? database.lookup(name: ingredient.text ?? "")
+            let entry = resolveEntry(ingredient)
             return Set((entry?.names ?? []).map { $0.lowercased() })
         }()
         let subs = rawSubs.filter { sub in
@@ -126,10 +125,31 @@ struct IngredientClassifier {
         )
     }
 
+    /// Resolve an OFF parsed ingredient to its most specific DB entry.
+    /// OFF often normalizes "soya lecithin" or "sunflower lecithin" down
+    /// to the generic additive id `en:lecithin` / `en:e322`, even though
+    /// the label text disambiguates the source. When the id-lookup lands
+    /// on an *additive* category entry but the *label text* resolves to
+    /// a more specific non-additive entry, prefer the named version —
+    /// it carries the source signal the user actually wrote on the box.
+    /// Skipped when the id-lookup is already a specific entry (so we
+    /// never downgrade something like en:wine to en:strawberry on a
+    /// "strawberry wine" label).
+    private func resolveEntry(_ ingredient: OFFIngredient) -> DBIngredient? {
+        let byId = database.lookup(id: ingredient.id)
+        let byName = database.lookup(name: ingredient.text ?? "")
+        if let id = byId, let n = byName,
+           id.id != n.id,
+           id.category == "additive",
+           n.category != "additive" {
+            return n
+        }
+        return byId ?? byName
+    }
+
     /// Classify just this one ingredient — no recursion into subs.
     private func classifyOne(_ ingredient: OFFIngredient) -> Verdict {
-        if let dbEntry = database.lookup(id: ingredient.id)
-            ?? database.lookup(name: ingredient.text ?? ""),
+        if let dbEntry = resolveEntry(ingredient),
            let ruling = dbEntry.rulings[profile.id] {
             let status = VerdictStatus(rawValue: ruling.effectiveStatus) ?? .unknown
             return Verdict(
