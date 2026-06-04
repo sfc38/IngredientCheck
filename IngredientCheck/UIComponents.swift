@@ -184,6 +184,7 @@ struct IngredientDetailSheet: View {
                         .font(.title2)
                         .fontWeight(.bold)
                         .fixedSize(horizontal: false, vertical: true)
+                        .textSelection(.enabled)
 
                     HStack(spacing: 10) {
                         Circle()
@@ -255,6 +256,7 @@ struct IngredientDetailSheet: View {
                         .foregroundColor(.secondary)
                 }
                 .padding()
+                .textSelection(.enabled)  // long-press any text to copy
             }
             .navigationTitle(verdict.ingredient.displayName)
             .navigationBarTitleDisplayMode(.inline)

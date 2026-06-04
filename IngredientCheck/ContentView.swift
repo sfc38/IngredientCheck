@@ -640,6 +640,7 @@ struct ResultView: View {
         .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 22))
         .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+        .textSelection(.enabled)  // long-press any text (barcode, name, brand) to copy
     }
 
     private var summarySectionHeader: some View {
