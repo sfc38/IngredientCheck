@@ -147,6 +147,23 @@ struct DataSourcesView: View {
             }
 
             Section {
+                Text("No account, no login, no analytics. Everything you do in this app stays on this device.")
+                    .font(.callout)
+                Group {
+                    Text("• **Scan history** is stored locally via iOS UserDefaults. It survives app updates and is included in encrypted iPhone backups. It is not synced to other devices.")
+                    Text("• **Product thumbnails** for past scans are cached to the device's Caches folder. iOS may purge them automatically under low storage. They are not in iCloud backups.")
+                    Text("• **Database** of ingredient classifications is fetched anonymously from raw.githubusercontent.com on launch and cached on this device.")
+                    Text("• **Product info** is fetched anonymously from world.openfoodfacts.net per scan.")
+                }
+                .font(.callout)
+                Text("Clear scan history any time: Home → Recent scans → See all → Clear (top right). This also removes the cached thumbnail files. Uninstalling the app removes everything.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            } header: {
+                Text("Where your data lives")
+            }
+
+            Section {
                 Text("Informational only — not a fatwa. For definitive rulings, consult a qualified scholar or your local certification body.")
                     .font(.footnote)
                     .foregroundColor(.secondary)

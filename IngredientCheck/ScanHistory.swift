@@ -108,11 +108,22 @@ final class ScanHistory: ObservableObject {
     }
 
     func clear() {
+        // Also wipe the on-disk thumbnail cache so it doesn't linger.
+        if let imagesDir = try? FileManager.default
+            .url(for: .cachesDirectory, in: .userDomainMask,
+                 appropriateFor: nil, create: false)
+            .appendingPathComponent("history-images", isDirectory: true) {
+            try? FileManager.default.removeItem(at: imagesDir)
+        }
         items = []
         save()
     }
 
     func remove(_ item: ScanHistoryItem) {
+        if let path = item.localImagePath,
+           FileManager.default.fileExists(atPath: path.path) {
+            try? FileManager.default.removeItem(at: path)
+        }
         items.removeAll { $0.id == item.id }
         save()
     }
