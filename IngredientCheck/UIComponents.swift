@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct FlowLayout: Layout {
     var spacing: CGFloat = 8
@@ -389,5 +390,21 @@ struct IngredientDetailSheet: View {
         if isHaramish && !isHalalish && !isConditional { return .red }
         if isHalalish && !isHaramish && !isConditional { return .green }
         return .orange
+    }
+}
+
+extension View {
+    /// Long-press shows iOS's preview of this element + a labeled
+    /// "Copy <label>" action, so users can see exactly what they're
+    /// copying. Pairs well with `.textSelection(.enabled)` higher up.
+    func copyableField(label: String, value: String) -> some View {
+        self.contextMenu {
+            Button {
+                UIPasteboard.general.string = value
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+            } label: {
+                Label("Copy \(label)", systemImage: "doc.on.doc")
+            }
+        }
     }
 }

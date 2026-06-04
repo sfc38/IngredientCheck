@@ -7,279 +7,157 @@ import SwiftUI
 import VisionKit
 
 struct ContentView: View {
+    @AppStorage("rootTab") private var rootTab: Int = 0
+
     var body: some View {
-        NavigationStack {
-            HomeView()
+        TabView(selection: $rootTab) {
+            NavigationStack { HomeView() }
+                .tabItem { Label("Home", systemImage: "house") }
+                .tag(0)
+
+            NavigationStack { HistoryView() }
+                .tabItem { Label("History", systemImage: "clock.arrow.circlepath") }
+                .tag(1)
+
+            NavigationStack { ScanView() }
+                .tabItem { Label("Scan", systemImage: "barcode.viewfinder") }
+                .tag(2)
+
+            NavigationStack { SettingsView() }
+                .tabItem { Label("Settings", systemImage: "gearshape") }
+                .tag(3)
         }
     }
 }
 
 struct HomeView: View {
     @AppStorage("profileId") private var profileId: String = "halal"
+    @AppStorage("rootTab") private var rootTab: Int = 0
     @EnvironmentObject var database: IngredientDatabase
-    @EnvironmentObject var history: ScanHistory
 
     var body: some View {
         ZStack {
             Color(.systemGroupedBackground)
                 .ignoresSafeArea()
 
-            ScrollView {
-                VStack(spacing: 16) {
-                    heroCard
-                    scanButton
-                    if !history.items.isEmpty {
-                        recentScansCard
-                    }
-                    databaseStatusRow
-                    howItWorksCard
-
-                    VStack(spacing: 2) {
-                        Text("Product data: Open Food Facts")
-                            .font(.caption2)
-                        Text("Informational only — not a fatwa.")
-                            .font(.caption2)
-                    }
+            VStack(spacing: 14) {
+                heroCompact
+                profileChip
+                scanCTA
+                databaseStatusCompact
+                howItWorksCompact
+                Spacer(minLength: 0)
+                Text("Open Food Facts · Informational only — not a fatwa.")
+                    .font(.caption2)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
-                    .padding(.top, 8)
-                    .padding(.bottom, 12)
-                }
-                .padding()
             }
+            .padding(.horizontal)
+            .padding(.top, 8)
+            .padding(.bottom, 12)
         }
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                NavigationLink(destination: SettingsView()) {
-                    Image(systemName: "gearshape")
-                }
-            }
-        }
     }
 
-    private var heroCard: some View {
-        VStack(spacing: 14) {
+    private var heroCompact: some View {
+        VStack(spacing: 6) {
             Image(systemName: "barcode.viewfinder")
-                .font(.system(size: 56))
+                .font(.system(size: 44))
                 .foregroundColor(.blue)
-                .padding(.top, 16)
-
-            VStack(spacing: 6) {
-                Text("Ingredient Check")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .multilineTextAlignment(.center)
-
-                Text("Scan a food barcode. Each ingredient gets a color and a verdict.")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 16)
-            }
-
-            HStack(spacing: 6) {
-                Image(systemName: "checkmark.seal.fill").font(.caption)
-                Text("\(DietaryProfiles.profile(for: profileId).displayName) profile")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-            }
-            .foregroundColor(.blue)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(Color.blue.opacity(0.12))
-            .clipShape(Capsule())
-            .padding(.bottom, 16)
+            Text("Ingredient Check")
+                .font(.title2)
+                .fontWeight(.bold)
+            Text("Scan a barcode. Each ingredient gets a color and a verdict.")
+                .font(.footnote)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
         }
-        .frame(maxWidth: .infinity)
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 22))
-        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
     }
 
-    private var scanButton: some View {
-        NavigationLink(destination: ScanView()) {
+    private var profileChip: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "checkmark.seal.fill").font(.caption)
+            Text("\(DietaryProfiles.profile(for: profileId).displayName) profile")
+                .font(.caption)
+                .fontWeight(.semibold)
+        }
+        .foregroundColor(.blue)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Color.blue.opacity(0.12))
+        .clipShape(Capsule())
+    }
+
+    private var scanCTA: some View {
+        Button {
+            rootTab = 2
+        } label: {
             Label("Scan Product", systemImage: "barcode.viewfinder")
                 .font(.headline)
                 .frame(maxWidth: .infinity)
-                .padding()
+                .padding(.vertical, 14)
                 .background(Color.blue)
                 .foregroundColor(.white)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
         }
     }
 
-    private var databaseStatusRow: some View {
+    private var databaseStatusCompact: some View {
         NavigationLink(destination: DataSourcesView()) {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 10) {
-                    Image(systemName: database.file != nil ? "checkmark.circle.fill" : "ellipsis.circle.fill")
-                        .font(.title3)
-                        .foregroundColor(database.file != nil ? .green : .secondary)
-                    Text(database.file != nil ? "Where our data comes from" : "Loading database…")
+            HStack(spacing: 10) {
+                Image(systemName: database.file != nil ? "checkmark.circle.fill" : "ellipsis.circle.fill")
+                    .foregroundColor(database.file != nil ? .green : .secondary)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(database.file != nil ? "Database ready" : "Loading database…")
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundColor(.primary)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-
-                if let file = database.file {
-                    VStack(alignment: .leading, spacing: 4) {
-                        statLine(icon: "circle.grid.2x2",
-                                 text: "\(file.ingredients.count.formatted()) ingredients classified")
-                        statLine(icon: "doc.text",
-                                 text: "Wikipedia descriptions, Open Food Facts data, WorldOfIslam community list")
-                        statLine(icon: "arrow.triangle.2.circlepath",
-                                 text: "Database version \(file.version) — fetched fresh on launch")
+                    if let file = database.file {
+                        Text("\(file.ingredients.count.formatted()) ingredients · v\(file.version)")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
                     }
-                    .padding(.leading, 4)
-
-                    Text("Tap to see every source with links →")
-                        .font(.caption2)
-                        .foregroundColor(.blue)
-                } else {
-                    Text("Fetching from raw.githubusercontent.com…")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
                 }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
-            .padding()
+            .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color(.systemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 22))
-            .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
         }
         .buttonStyle(.plain)
     }
 
-    private func statLine(icon: String, text: String) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            Image(systemName: icon)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .frame(width: 14)
-            Text(text)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private var howItWorksCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("How it works")
-                .font(.headline)
-
+    private var howItWorksCompact: some View {
+        VStack(alignment: .leading, spacing: 6) {
             stepRow(num: 1, text: "Scan a food barcode")
-            stepRow(num: 2, text: "See each ingredient as a color-coded chip")
-            stepRow(num: 3, text: "Tap a chip to see what it is and why")
+            stepRow(num: 2, text: "See each ingredient as a color chip")
+            stepRow(num: 3, text: "Tap a chip for the why and sources")
         }
-        .padding()
+        .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 22))
-        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
     private func stepRow(num: Int, text: String) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             ZStack {
-                Circle()
-                    .fill(Color.blue.opacity(0.15))
-                    .frame(width: 28, height: 28)
-                Text("\(num)")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.blue)
+                Circle().fill(Color.blue.opacity(0.15)).frame(width: 22, height: 22)
+                Text("\(num)").font(.caption2).fontWeight(.semibold).foregroundColor(.blue)
             }
-            Text(text)
-                .font(.subheadline)
+            Text(text).font(.caption)
             Spacer()
-        }
-    }
-
-    private var recentScansCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Recent scans").font(.headline)
-                Spacer()
-                if history.items.count > 5 {
-                    NavigationLink(destination: HistoryView()) {
-                        Text("See all").font(.caption).foregroundColor(.blue)
-                    }
-                }
-            }
-            VStack(spacing: 8) {
-                ForEach(history.items.prefix(5)) { item in
-                    NavigationLink(destination: ScanView(initialBarcode: item.barcode)) {
-                        historyRow(item)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 22))
-        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
-    }
-
-    private func historyRow(_ item: ScanHistoryItem) -> some View {
-        HStack(spacing: 12) {
-            ScanHistoryThumbnail(item: item)
-                .frame(width: 56, height: 56)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-            VStack(alignment: .leading, spacing: 2) {
-                Text(item.displayName)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                HStack(spacing: 8) {
-                    Text(friendlyRelative(item.date))
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                    historyMiniCounts(item)
-                }
-            }
-            Spacer()
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-    }
-
-    private func friendlyRelative(_ date: Date) -> String { date.friendlyRelative }
-
-    @ViewBuilder
-    private func historyMiniCounts(_ item: ScanHistoryItem) -> some View {
-        HStack(spacing: 6) {
-            if item.forbidden > 0 {
-                miniDot(color: .red, count: item.forbidden)
-            }
-            if item.caution > 0 {
-                miniDot(color: .orange, count: item.caution)
-            }
-            if item.allowed > 0 {
-                miniDot(color: .green, count: item.allowed)
-            }
-        }
-    }
-
-    private func miniDot(color: Color, count: Int) -> some View {
-        HStack(spacing: 2) {
-            Circle().fill(color).frame(width: 6, height: 6)
-            Text("\(count)").font(.caption2).foregroundColor(.secondary)
         }
     }
 }
 
 struct HistoryView: View {
     @EnvironmentObject var history: ScanHistory
+    @AppStorage("rootTab") private var rootTab: Int = 0
 
     var body: some View {
         List {
@@ -313,6 +191,11 @@ struct HistoryView: View {
         .navigationTitle("Scan history")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button { rootTab = 0 } label: {
+                    Label("Home", systemImage: "house")
+                }
+            }
             if !history.items.isEmpty {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Clear", role: .destructive) {
@@ -432,6 +315,7 @@ struct ScanView: View {
                     product: product,
                     isLoading: isLoading,
                     errorMessage: errorMessage,
+                    fetchError: fetchError,
                     profile: profile,
                     onScanAgain: resetScanner
                 )
@@ -615,6 +499,7 @@ struct ResultView: View {
                         .font(.title3)
                         .fontWeight(.semibold)
                         .lineLimit(2)
+                        .copyableField(label: "product name", value: name)
                 } else if isLoading && product == nil {
                     Text("Loading…")
                         .font(.title3)
@@ -625,11 +510,13 @@ struct ResultView: View {
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
+                        .copyableField(label: "brand", value: brands)
                 }
                 Text("Barcode: \(barcode)")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .lineLimit(1)
+                    .copyableField(label: "barcode", value: barcode)
 
                 if isLoading && product != nil {
                     HStack(spacing: 6) {

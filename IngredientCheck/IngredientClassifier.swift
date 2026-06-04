@@ -25,9 +25,31 @@ struct IngredientClassifier {
     func classify(_ ingredient: OFFIngredient) -> Verdict {
         let parentVerdict = classifyOne(ingredient)
 
-        guard let subs = ingredient.ingredients, !subs.isEmpty else {
+        guard let rawSubs = ingredient.ingredients, !rawSubs.isEmpty else {
             return parentVerdict
         }
+
+        // OFF often re-emits an E-number or synonym of the parent as a
+        // sub-ingredient — e.g. "Soya Lecithin (E322)" arrives as parent
+        // en:soya-lecithin with sub en:e322, even though E322 *is* the
+        // additive code for soya lecithin. Skip subs that are aliases of
+        // the parent by checking against the parent's names list, which
+        // already contains its E-code and translations.
+        let parentNames: Set<String> = {
+            let entry = database.lookup(id: ingredient.id)
+                ?? database.lookup(name: ingredient.text ?? "")
+            return Set((entry?.names ?? []).map { $0.lowercased() })
+        }()
+        let subs = rawSubs.filter { sub in
+            var aliases: [String] = []
+            if let t = sub.text?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !t.isEmpty { aliases.append(t.lowercased()) }
+            if let id = sub.id, let tail = id.split(separator: ":").last {
+                aliases.append(String(tail).replacingOccurrences(of: "-", with: " ").lowercased())
+            }
+            return !aliases.contains { parentNames.contains($0) }
+        }
+        guard !subs.isEmpty else { return parentVerdict }
 
         let subVerdicts = subs.map { classify($0) }
 
