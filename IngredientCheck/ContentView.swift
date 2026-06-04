@@ -566,6 +566,9 @@ struct ResultView: View {
                           !isLoading {
                     rawIngredientsCard(text)
                         .padding(.horizontal)
+                } else if product != nil, !isLoading {
+                    noIngredientsCard
+                        .padding(.horizontal)
                 }
 
                 scanAgainButton
@@ -732,6 +735,39 @@ struct ResultView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 14))
         }
         .padding(.top, 4)
+    }
+
+    private var noIngredientsCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Image(systemName: "questionmark.circle.fill")
+                    .foregroundColor(.orange)
+                Text("No ingredient information").font(.headline)
+            }
+            Text("Open Food Facts doesn't have an ingredient list for this product yet, so we have nothing to classify. The product exists in their database, but the ingredients section is empty.")
+                .font(.callout)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("You can help fill the gap — open the product on Open Food Facts and add the ingredient list from the package. Once OFF has it, this app picks it up automatically on your next scan.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if let url = URL(string: "https://world.openfoodfacts.org/product/\(barcode)") {
+                Link(destination: url) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.up.right.square").font(.caption)
+                        Text("Open in Open Food Facts").font(.caption).fontWeight(.medium)
+                    }
+                    .foregroundColor(.blue)
+                }
+                .padding(.top, 4)
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 22))
+        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
     }
 
     private var manufacturerLabelsCard: some View {
