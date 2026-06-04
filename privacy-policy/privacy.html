@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IngredientCheck — Privacy Policy</title>
+<style>
+:root { color-scheme: light dark; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  max-width: 720px; margin: 2em auto; padding: 0 1.25em;
+  line-height: 1.55; color: #1c1c1e; background: #fff;
+}
+@media (prefers-color-scheme: dark) {
+  body { background: #1c1c1e; color: #f2f2f7; }
+  a { color: #64b5ff; }
+}
+h1 { font-size: 1.75em; }
+h2 { font-size: 1.15em; margin-top: 1.75em; }
+.muted { color: #6e6e73; font-size: 0.85em; }
+ul { padding-left: 1.25em; }
+code { background: rgba(127,127,127,0.15); padding: 1px 5px; border-radius: 4px; font-size: 0.95em; }
+</style>
+</head>
+<body>
+
+<h1>IngredientCheck — Privacy Policy</h1>
+<p class="muted">Last updated: 2026-06-04 · Contact: fatihcatpinar@gmail.com</p>
+
+<p>
+IngredientCheck is designed to need as little of your information as
+possible. The short version: <strong>no account, no login, no analytics,
+no advertising, and nothing leaves your device that identifies you.</strong>
+</p>
+
+<h2>1. What we collect</h2>
+<p>
+We collect <strong>nothing</strong>. There is no user account, no email
+sign-up, no personal-information form, no behavioral analytics, and no
+advertising SDKs in this app.
+</p>
+
+<h2>2. What stays on your device</h2>
+<ul>
+  <li>
+    <strong>Scan history</strong> — barcode, product name, image URL, date,
+    and per-status ingredient counts for each product you scan. Stored in
+    iOS <code>UserDefaults</code> under the app's sandbox. Included in
+    encrypted iPhone backups; not synced to other devices.
+  </li>
+  <li>
+    <strong>Product thumbnails</strong> — small images for products you've
+    scanned, cached to the iOS Caches directory so the home screen doesn't
+    need to re-fetch them. iOS may purge these automatically if storage
+    runs low. Not included in iCloud backups.
+  </li>
+  <li>
+    <strong>Ingredient classification database</strong> — the JSON we use
+    to color-code ingredients is fetched anonymously from our open
+    GitHub repo and cached on-device.
+  </li>
+</ul>
+
+<h2>3. What we fetch from the internet</h2>
+<p>The app makes two kinds of anonymous network requests:</p>
+<ul>
+  <li>
+    <strong>Open Food Facts</strong> (<code>world.openfoodfacts.net</code>) —
+    when you scan a barcode, we look up the product. We send only the
+    barcode; we don't send identifiers, location, advertising IDs, or
+    anything else that could identify you.
+  </li>
+  <li>
+    <strong>Our public data repository</strong>
+    (<code>raw.githubusercontent.com/sfc38/ingredient-checker-data</code>) —
+    on launch we fetch the latest ingredient classification JSON.
+    Same anonymous request semantics.
+  </li>
+</ul>
+<p>
+Both endpoints are HTTPS. We do not log, store, or analyze the requests
+on our side because we don't run a server.
+</p>
+
+<h2>4. Camera</h2>
+<p>
+The app uses the camera <em>only</em> for barcode scanning, via Apple's
+VisionKit framework. Camera frames are processed on-device and never
+transmitted anywhere. You can revoke camera permission at any time in
+iOS Settings → Privacy &amp; Security → Camera → IngredientCheck.
+</p>
+
+<h2>5. Children</h2>
+<p>
+The app does not target children specifically and does not collect any
+information from anyone, so there is no special children's data category
+to disclose.
+</p>
+
+<h2>6. Third parties</h2>
+<p>
+No third-party analytics, no third-party advertising, no third-party
+crash reporters. The only third-party services the app communicates
+with are Open Food Facts and GitHub (for the ingredient database), and
+those communications are anonymous as described above.
+</p>
+
+<h2>7. Your rights</h2>
+<p>
+You can clear all on-device data at any time:
+</p>
+<ul>
+  <li>Clear scan history: in the app, Home → Recent scans → See all → Clear.</li>
+  <li>Delete the app: removes the local scan history, the cached database, and the cached thumbnails. Apple's standard app-deletion process applies.</li>
+</ul>
+<p>
+There is no server-side data to request, export, or delete because we
+don't run a server.
+</p>
+
+<h2>8. Changes to this policy</h2>
+<p>
+Material changes to this policy will be reflected in the "Last updated"
+date at the top, and in any app update that requires re-acknowledgement
+will be called out in the App Store release notes.
+</p>
+
+<h2>9. Contact</h2>
+<p>
+Questions or concerns? Email
+<a href="mailto:fatihcatpinar@gmail.com">fatihcatpinar@gmail.com</a>.
+</p>
+
+</body>
+</html>
