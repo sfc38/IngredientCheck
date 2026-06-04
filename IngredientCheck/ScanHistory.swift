@@ -85,17 +85,23 @@ final class ScanHistory: ObservableObject {
         save()
 
         // Persist the image locally so re-renders don't have to re-fetch.
+        // When the download finishes, publish an objectWillChange so any
+        // ScanHistoryThumbnail views currently showing the placeholder
+        // re-render and pick up the new file.
         if let urlString = product?.bestThumbnailUrl, !urlString.isEmpty,
            let url = URL(string: urlString),
            let path = item.localImagePath,
            !FileManager.default.fileExists(atPath: path.path) {
-            Task.detached(priority: .utility) {
+            Task.detached(priority: .utility) { [weak self] in
                 try? FileManager.default.createDirectory(
                     at: path.deletingLastPathComponent(),
                     withIntermediateDirectories: true
                 )
-                if let (data, _) = try? await URLSession.shared.data(from: url) {
-                    try? data.write(to: path, options: .atomic)
+                guard let (data, _) = try? await URLSession.shared.data(from: url),
+                      (try? data.write(to: path, options: .atomic)) != nil
+                else { return }
+                await MainActor.run {
+                    self?.objectWillChange.send()
                 }
             }
         }
