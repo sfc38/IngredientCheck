@@ -33,12 +33,13 @@ struct IngredientClassifier {
         // sub-ingredient — e.g. "Soya Lecithin (E322)" arrives as parent
         // en:soya-lecithin with sub en:e322, even though E322 *is* the
         // additive code for soya lecithin. Skip subs that are aliases of
-        // the parent by checking against the parent's names list, which
-        // already contains its E-code and translations.
-        let parentNames: Set<String> = {
-            let entry = resolveEntry(ingredient)
-            return Set((entry?.names ?? []).map { $0.lowercased() })
-        }()
+        // the parent by name OR by E-code. The E-code check catches the
+        // common case where the parent's names[] doesn't carry its own
+        // E-code (e.g. en:soya-lecithin has no "E322" in its names but
+        // its e_number field is "E322").
+        let parentEntry = resolveEntry(ingredient)
+        let parentNames: Set<String> = Set((parentEntry?.names ?? []).map { $0.lowercased() })
+        let parentECode: String? = parentEntry?.eNumber.map(normalizeECode)
         let subs = rawSubs.filter { sub in
             var aliases: [String] = []
             if let t = sub.text?.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -46,7 +47,12 @@ struct IngredientClassifier {
             if let id = sub.id, let tail = id.split(separator: ":").last {
                 aliases.append(String(tail).replacingOccurrences(of: "-", with: " ").lowercased())
             }
-            return !aliases.contains { parentNames.contains($0) }
+            if aliases.contains(where: { parentNames.contains($0) }) { return false }
+            if let pe = parentECode,
+               aliases.contains(where: { normalizeECode($0) == pe }) {
+                return false
+            }
+            return true
         }
         guard !subs.isEmpty else { return parentVerdict }
 
@@ -129,22 +135,39 @@ struct IngredientClassifier {
     /// OFF often normalizes "soya lecithin" or "sunflower lecithin" down
     /// to the generic additive id `en:lecithin` / `en:e322`, even though
     /// the label text disambiguates the source. When the id-lookup lands
-    /// on an *additive* category entry but the *label text* resolves to
-    /// a more specific non-additive entry, prefer the named version —
-    /// it carries the source signal the user actually wrote on the box.
-    /// Skipped when the id-lookup is already a specific entry (so we
+    /// on a generic additive entry but the *label text* resolves to a
+    /// more specific entry, prefer the named version — it carries the
+    /// source signal the user actually wrote on the box. Two cases:
+    /// (a) id is additive, name is non-additive (e.g. en:e322 -> en:soya-lecithin)
+    /// (b) both additive but share the same E-code, meaning the named
+    ///     one is a source-disambiguated variant of the id one (e.g.
+    ///     en:e322 -> en:soy-lecithin, both E322).
+    /// Skipped when the id-lookup is already a specific entry, so we
     /// never downgrade something like en:wine to en:strawberry on a
-    /// "strawberry wine" label).
+    /// "strawberry wine" label.
     private func resolveEntry(_ ingredient: OFFIngredient) -> DBIngredient? {
         let byId = database.lookup(id: ingredient.id)
         let byName = database.lookup(name: ingredient.text ?? "")
         if let id = byId, let n = byName,
            id.id != n.id,
-           id.category == "additive",
-           n.category != "additive" {
-            return n
+           id.category == "additive" {
+            if n.category != "additive" { return n }
+            if let idE = id.eNumber.map(normalizeECode),
+               let nE = n.eNumber.map(normalizeECode),
+               idE == nE {
+                return n
+            }
         }
         return byId ?? byName
+    }
+
+    /// Strip case, spaces, and hyphens so "E322", "e-322", " e 322 " all
+    /// compare equal. Used by the sub-ingredient filter and by
+    /// resolveEntry to match E-codes across formatting variants.
+    private func normalizeECode(_ s: String) -> String {
+        s.lowercased()
+            .replacingOccurrences(of: " ", with: "")
+            .replacingOccurrences(of: "-", with: "")
     }
 
     /// Classify just this one ingredient — no recursion into subs.

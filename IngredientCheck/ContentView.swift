@@ -8,9 +8,25 @@ import VisionKit
 
 struct ContentView: View {
     @AppStorage("rootTab") private var rootTab: Int = 0
+    // Bumps every time the Scan tab icon is tapped, whether the user is
+    // switching to it or re-tapping it while already on it. ScanView
+    // observes this to reset stale result state in both cases — plain
+    // .onChange(of: rootTab) misses the same-tab re-tap because the
+    // stored value doesn't actually change.
+    @State private var scanTabTaps: Int = 0
+
+    private var tabSelection: Binding<Int> {
+        Binding(
+            get: { rootTab },
+            set: { newValue in
+                if newValue == 2 { scanTabTaps += 1 }
+                rootTab = newValue
+            }
+        )
+    }
 
     var body: some View {
-        TabView(selection: $rootTab) {
+        TabView(selection: tabSelection) {
             NavigationStack { HomeView() }
                 .tabItem { Label("Home", systemImage: "house") }
                 .tag(0)
@@ -19,7 +35,7 @@ struct ContentView: View {
                 .tabItem { Label("History", systemImage: "clock.arrow.circlepath") }
                 .tag(1)
 
-            NavigationStack { ScanView() }
+            NavigationStack { ScanView(scanTabTaps: scanTabTaps) }
                 .tabItem { Label("Scan", systemImage: "barcode.viewfinder") }
                 .tag(2)
 
@@ -161,6 +177,7 @@ struct HomeView: View {
 struct HistoryView: View {
     @EnvironmentObject var history: ScanHistory
     @AppStorage("rootTab") private var rootTab: Int = 0
+    @State private var showingClearConfirmation = false
 
     var body: some View {
         List {
@@ -202,7 +219,7 @@ struct HistoryView: View {
             if !history.items.isEmpty {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Clear", role: .destructive) {
-                        history.clear()
+                        showingClearConfirmation = true
                     }
                 }
             }
@@ -211,6 +228,18 @@ struct HistoryView: View {
             if history.items.isEmpty {
                 Text("No scans yet.").foregroundColor(.secondary)
             }
+        }
+        .confirmationDialog(
+            "Clear scan history?",
+            isPresented: $showingClearConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete All Scans", role: .destructive) {
+                history.clear()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("All \(history.items.count) scans will be deleted. This cannot be undone.")
         }
     }
 
@@ -281,6 +310,10 @@ extension Date {
 
 struct ScanView: View {
     let initialBarcode: String?
+    /// Bumps from ContentView every time the Scan tab icon is tapped.
+    /// Defaults to 0 for the History-pushed copy of this view, which
+    /// never receives updates and so never auto-resets.
+    let scanTabTaps: Int
 
     @AppStorage("profileId") private var profileId: String = "halal"
     @EnvironmentObject var database: IngredientDatabase
@@ -294,8 +327,9 @@ struct ScanView: View {
     @State private var errorMessage: String = ""
     @State private var fetchError: ProductFetchError? = nil
 
-    init(initialBarcode: String? = nil) {
+    init(initialBarcode: String? = nil, scanTabTaps: Int = 0) {
         self.initialBarcode = initialBarcode
+        self.scanTabTaps = scanTabTaps
         let bc = initialBarcode ?? ""
         self._scannedCode = State(initialValue: bc)
         self._hasScanned = State(initialValue: !bc.isEmpty)
@@ -338,6 +372,16 @@ struct ScanView: View {
         }
         .onChange(of: scannedCode) { newCode in
             Task { await fetchIfNeeded(barcode: newCode) }
+        }
+        .onChange(of: scanTabTaps) { _ in
+            // Fires for both "switched to Scan tab" and "re-tapped Scan
+            // tab while already on it" (rootTab alone can't see the
+            // latter). Skipped for the History-pushed copy (its
+            // initialBarcode != nil and it never receives counter
+            // updates) so its product stays put.
+            if initialBarcode == nil, hasScanned {
+                resetScanner()
+            }
         }
         .task {
             if let bc = initialBarcode, !bc.isEmpty {
