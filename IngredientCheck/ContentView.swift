@@ -41,6 +41,7 @@ struct HomeView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 14) {
+                Spacer(minLength: 0)
                 heroCompact
                 profileChip
                 scanCTA
@@ -53,17 +54,19 @@ struct HomeView: View {
                     .multilineTextAlignment(.center)
             }
             .padding(.horizontal)
-            .padding(.top, 8)
-            .padding(.bottom, 12)
+            .padding(.vertical, 12)
         }
         .navigationBarTitleDisplayMode(.inline)
     }
 
     private var heroCompact: some View {
-        VStack(spacing: 6) {
-            Image(systemName: "barcode.viewfinder")
-                .font(.system(size: 44))
-                .foregroundColor(.blue)
+        VStack(spacing: 8) {
+            Image("HomeLogo")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 84, height: 84)
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 2)
             Text("Ingredient Check")
                 .font(.title2)
                 .fontWeight(.bold)
