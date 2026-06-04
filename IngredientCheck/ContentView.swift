@@ -406,6 +406,7 @@ struct ScanView: View {
     @State private var isLoading = false
     @State private var hasScanned: Bool
     @State private var errorMessage: String = ""
+    @State private var fetchError: ProductFetchError? = nil
 
     init(initialBarcode: String? = nil) {
         self.initialBarcode = initialBarcode
@@ -492,6 +493,7 @@ struct ScanView: View {
         isLoading = true
         product = nil
         errorMessage = ""
+        fetchError = nil
         do {
             let fetched = try await ProductService().fetchProduct(barcode: barcode)
             product = fetched
@@ -499,6 +501,7 @@ struct ScanView: View {
             let verdicts = classifier.classify(fetched.ingredients ?? [])
             history.record(barcode: barcode, product: fetched, verdicts: verdicts)
         } catch let err as ProductFetchError {
+            fetchError = err
             errorMessage = err.localizedDescription
         } catch {
             errorMessage = "Unexpected error."
@@ -513,6 +516,7 @@ struct ScanView: View {
         isLoading = false
         hasScanned = false
         errorMessage = ""
+        fetchError = nil
     }
 }
 
@@ -521,6 +525,7 @@ struct ResultView: View {
     let product: Product?
     let isLoading: Bool
     let errorMessage: String
+    let fetchError: ProductFetchError?
     let profile: DietaryProfile
     let onScanAgain: () -> Void
 
@@ -546,29 +551,34 @@ struct ResultView: View {
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 16, pinnedViews: verdicts.isEmpty ? [] : [.sectionHeaders]) {
-                productCard
-                    .padding(.horizontal)
-
-                if !manufacturerLabels.isEmpty {
-                    manufacturerLabelsCard
+                if fetchError == .notFound {
+                    productNotFoundCard
                         .padding(.horizontal)
-                }
+                } else {
+                    productCard
+                        .padding(.horizontal)
 
-                if !verdicts.isEmpty {
-                    Section {
-                        ingredientsCard
+                    if !manufacturerLabels.isEmpty {
+                        manufacturerLabelsCard
                             .padding(.horizontal)
-                    } header: {
-                        summarySectionHeader
                     }
-                } else if let text = product?.ingredientsText,
-                          !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                          !isLoading {
-                    rawIngredientsCard(text)
-                        .padding(.horizontal)
-                } else if product != nil, !isLoading {
-                    noIngredientsCard
-                        .padding(.horizontal)
+
+                    if !verdicts.isEmpty {
+                        Section {
+                            ingredientsCard
+                                .padding(.horizontal)
+                        } header: {
+                            summarySectionHeader
+                        }
+                    } else if let text = product?.ingredientsText,
+                              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                              !isLoading {
+                        rawIngredientsCard(text)
+                            .padding(.horizontal)
+                    } else if product != nil, !isLoading {
+                        noIngredientsCard
+                            .padding(.horizontal)
+                    }
                 }
 
                 scanAgainButton
@@ -735,6 +745,57 @@ struct ResultView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 14))
         }
         .padding(.top, 4)
+    }
+
+    private var productNotFoundCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 6) {
+                Image(systemName: "barcode.viewfinder")
+                    .foregroundColor(.orange)
+                Text("Product not in Open Food Facts").font(.headline)
+            }
+            Text("We scanned the barcode but Open Food Facts — our product data source — doesn't have this product in their database.")
+                .font(.callout)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: 8) {
+                Image(systemName: "barcode").font(.caption).foregroundColor(.secondary)
+                Text(barcode).font(.subheadline).fontWeight(.medium)
+            }
+            .padding(.vertical, 4)
+
+            Text("You can add the product yourself in a couple of minutes — open it on Open Food Facts and fill in the name, brand, image, and ingredients. Once they have it, this app picks it up automatically on your next scan.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if let url = URL(string: "https://world.openfoodfacts.org/cgi/product.pl?type=add&code=\(barcode)") {
+                Link(destination: url) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus.circle").font(.caption)
+                        Text("Add to Open Food Facts").font(.caption).fontWeight(.medium)
+                    }
+                    .foregroundColor(.blue)
+                }
+                .padding(.top, 4)
+            }
+            if let url = URL(string: "https://world.openfoodfacts.org/product/\(barcode)") {
+                Link(destination: url) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.up.right.square").font(.caption)
+                        Text("Try opening on Open Food Facts anyway").font(.caption)
+                    }
+                    .foregroundColor(.secondary)
+                }
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 22))
+        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+        .textSelection(.enabled)
     }
 
     private var noIngredientsCard: some View {
